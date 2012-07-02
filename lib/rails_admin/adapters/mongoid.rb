@@ -42,7 +42,15 @@ module RailsAdmin
         scope = scope.where(query_conditions(options[:query])) if options[:query]
         scope = scope.where(filter_conditions(options[:filters])) if options[:filters]
         if options[:page] && options[:per]
-          scope = scope.send(Kaminari.config.page_method_name, options[:page]).per(options[:per])
+          begin
+            scope = scope.send(Kaminari.config.page_method_name, options[:page]).per(options[:per])
+          rescue NoMethodError
+            # FIXME https://github.com/sferik/rails_admin/issues/1232
+            # undefined method `page' for #<Array:0x00000127a38dd8>
+            #   mongoid (2.4.11) lib/mongoid/criteria.rb:385:in `method_missing'
+            #   kaminari (0.13.0) lib/kaminari/models/mongoid_extension.rb:11:in `page'
+            #   rails_admin (0.0.5) lib/rails_admin/adapters/mongoid.rb:46:in `all'
+          end
         end
         scope = sort_by(options, scope) if options[:sort]
         scope
